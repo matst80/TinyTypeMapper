@@ -30,7 +30,7 @@ namespace TinyMapper.Handler
               to = await manualConversion(source, to);
               return to;
           };
-        
+
         public static Func<TFrom, Task<TTo>> AutoConverter<TFrom, TTo>(MappingPropertySource baseMappingOn = MappingPropertySource.Target, bool requireAllProperties = true) => async (source) =>
         {
             if (source == null)

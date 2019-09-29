@@ -18,9 +18,9 @@ namespace TinyMapper.Handler
         public static event MappingOverwritten OnMappingOverwrite;
 
         private static BlockingCollection<Mapper> converters = new BlockingCollection<Mapper>();
-        public static bool HasMapper(Type from, Type to) => FindMapper(from, to) != null;
-        public static bool HasMapper<TFrom, TTo>() => HasMapper(typeof(TFrom), typeof(TTo));
-        public static Mapper FindMapper(Type from, Type to)
+        internal static bool HasMapper(Type from, Type to) => FindMapper(from, to) != null;
+        internal static bool HasMapper<TFrom, TTo>() => HasMapper(typeof(TFrom), typeof(TTo));
+        internal static Mapper FindMapper(Type from, Type to)
             => converters.FirstOrDefault(d => d.Matches(from, to));
 
         public static void Reset() => converters = new BlockingCollection<Mapper>();

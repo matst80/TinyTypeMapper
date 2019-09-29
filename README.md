@@ -1,7 +1,6 @@
 # TinyTypeMapper
 
-> **Mapping made simple**
-
+> Register a mapping between types and convert anywhere
 
 ## Test with coverage
 
