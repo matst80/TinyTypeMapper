@@ -50,10 +50,15 @@
             // Arrange
             MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, ToObject>(MappingHandler.MappingPropertySource.Target, requireAllProperties: true));
 
+            MappingHandler.OnMappingOverwrite += (form, to) =>
+            {
+                return true;
+            };
             // Act
             //Action shouldAddExisitingMapping = () =>
-            MappingHandler.AddMapping<FromObject, ToObject>(async (source) => new ToObject() {
-                 Name = "NewMapper!"
+            MappingHandler.AddMapping<FromObject, ToObject>(async (source) => new ToObject()
+            {
+                Name = "NewMapper!"
             });
             //); ;
 
@@ -61,12 +66,98 @@
 
             //Assert
             Assert.Equal("NewMapper!", result.Name);
-            //shouldAddExisitingMapping.Should().Throw<MapperAlreadyDefinedException>();        }        [Fact]        public void Mapping_should_throw_if_fields_are_missing()        {
+            //shouldAddExisitingMapping.Should().Throw<MapperAlreadyDefinedException>();
+        }        [Fact]        public async Task Disallow_mapperoverwrite()        {
+            // Arrange
+            MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, ToObject>(MappingHandler.MappingPropertySource.Target, requireAllProperties: true));
+
+            MappingHandler.OnMappingOverwrite += (form, to) =>
+            {
+                return false;
+            };
+            // Act
+            Action shouldAddExisitingMapping = () =>
+            {
+                MappingHandler.AddMapping<FromObject, ToObject>(async (source) => new ToObject()
+                {
+                    Name = "NewMapper!"
+                });
+            };
+
+
+            var result = await new FromObject().ConvertAsync<ToObject>();
+
+            //Assert
+            //Assert.Equal("NewMapper!", result.Name);
+            shouldAddExisitingMapping.Should().Throw<MapperAlreadyDefinedException>();
+        }
+
+        [Fact]
+        public void Mapping_should_throw_if_fields_are_missing()
+        {
             //Arrange
-            MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, FailingToObject>(MappingHandler.MappingPropertySource.Source));            var fromObject = new FromObject()            {                Name = "Testsson",                Age = 22            };
+            MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, FailingToObject>(MappingHandler.MappingPropertySource.Source));
+
+            var fromObject = new FromObject()
+            {
+                Name = "Testsson",
+                Age = 22
+            };
 
             //Act
             Func<Task> tryToConvert = async () => await fromObject.ConvertAsync<FailingToObject>();
 
             //Assert
-            tryToConvert.Should().Throw<KeyNotFoundException>();        }        public void Dispose() => MappingHandler.Reset();    }    public class FailingToObject    {        public string Name { get; set; }    }    public enum TestEnum    {        Error,        Yes,        No,        Maybe    }    public class ExtendedToObject : ToObject    {    }    public class ExtendedFromObject : FromObject    {        public string OtherWrappedValue { get; set; }    }    public class ToObject    {        public WrappedValue WrappedValue { get; set; }        public string Name { get; set; }        [MapTo(nameof(FromObject.EnumValue))]        public TestEnum TestValue { get; set; }        public int Age { get; set; }    }    public class WrappedValue    {        public string Value { get; set; }        public string OtherValue { get; set; }    }    public class FromObject    {        public string WrappedValue { get; set; }        public string Name { get; set; }        [MapTo(nameof(ToObject.TestValue))]        public string EnumValue { get; set; }        public int Age { get; set; }    }}
+            tryToConvert.Should().Throw<KeyNotFoundException>();
+        }
+
+        public void Dispose() => MappingHandler.Reset();
+    }
+
+    public class FailingToObject
+    {
+        public string Name { get; set; }
+    }
+
+    public enum TestEnum
+    {
+        Error,
+        Yes,
+        No,
+        Maybe
+    }
+
+    public class ExtendedToObject : ToObject
+    {
+
+    }
+
+    public class ExtendedFromObject : FromObject
+    {
+        public string OtherWrappedValue { get; set; }
+    }
+
+    public class ToObject
+    {
+        public WrappedValue WrappedValue { get; set; }
+        public string Name { get; set; }
+        [MapTo(nameof(FromObject.EnumValue))]
+        public TestEnum TestValue { get; set; }
+        public int Age { get; set; }
+
+    }
+
+    public class WrappedValue
+    {
+        public string Value { get; set; }
+        public string OtherValue { get; set; }
+    }
+
+    public class FromObject
+    {
+        public string WrappedValue { get; set; }
+        public string Name { get; set; }
+        [MapTo(nameof(ToObject.TestValue))]
+        public string EnumValue { get; set; }
+        public int Age { get; set; }
+    }}
