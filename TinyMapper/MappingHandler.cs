@@ -8,8 +8,12 @@ using System.Collections.Concurrent;
 
 namespace TinyMapper
 {
+    public delegate bool MappingOverwritten(Type from, Type to);
+
     public static class MappingHandler
     {
+        public static event MappingOverwritten OnMappingOverwrite;
+
         private static BlockingCollection<Mapper> converters = new BlockingCollection<Mapper>();
 
         public static void Reset() => converters = new BlockingCollection<Mapper>();
@@ -56,7 +60,11 @@ namespace TinyMapper
                 }
                 else
                 {
-                    throw new MapperAlreadyDefinedException(fromType, toType);
+                    if (OnMappingOverwrite != null)
+                    {
+                        if (!OnMappingOverwrite(fromType, toType))
+                            throw new MapperAlreadyDefinedException(fromType, toType);
+                    }
                 }
             }
         }
@@ -77,7 +85,11 @@ namespace TinyMapper
             }
             else
             {
-                throw new MapperAlreadyDefinedException(typeof(TFrom), typeof(TTo));
+                if (OnMappingOverwrite != null)
+                {
+                    if (!OnMappingOverwrite(typeof(TFrom), typeof(TTo)))
+                        throw new MapperAlreadyDefinedException(typeof(TFrom), typeof(TTo));
+                }
             }
         }
 
@@ -97,7 +109,11 @@ namespace TinyMapper
             }
             else
             {
-                throw new MapperAlreadyDefinedException(typeof(TFrom), typeof(TTo));
+                if (OnMappingOverwrite != null)
+                {
+                    if (!OnMappingOverwrite(typeof(TFrom), typeof(TTo)))
+                        throw new MapperAlreadyDefinedException(typeof(TFrom), typeof(TTo));
+                }
             }
         }
 

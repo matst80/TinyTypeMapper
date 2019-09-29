@@ -46,13 +46,13 @@
             var toObject = await fromObject.ConvertAsync<FromObject>();
 
             //Assert
-            toObject.EnumValue.Should().Be("No");        }        [Fact]        public void Dont_allow_multiple_mappers()        {
+            toObject.EnumValue.Should().Be("No");        }        [Fact]        public void Allow_mapperoverwrite()        {
             // Arrange
             MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, ToObject>(MappingHandler.MappingPropertySource.Target, requireAllProperties: true));
 
             // Act
             //Action shouldAddExisitingMapping = () =>
-            MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, ToObject>();
+            MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, ToObject>());
             //); ;
 
             //Assert
