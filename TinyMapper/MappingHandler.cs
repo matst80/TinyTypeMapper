@@ -12,11 +12,38 @@ namespace TinyMapper
 
     public static class MappingHandler
     {
+        public static bool Remove<T>(this BlockingCollection<T> self, T itemToRemove)
+        {
+            lock (self)
+            {
+                T comparedItem;
+                var itemsList = new List<T>();
+                do
+                {
+                    var result = self.TryTake(out comparedItem);
+                    if (!result)
+                        return false;
+                    if (!comparedItem.Equals(itemToRemove))
+                    {
+                        itemsList.Add(comparedItem);
+                    }
+                } while (!(comparedItem.Equals(itemToRemove)));
+                Parallel.ForEach(itemsList, t => self.Add(t));
+            }
+            return true;
+        }
+
         public static event MappingOverwritten OnMappingOverwrite;
 
         private static BlockingCollection<Mapper> converters = new BlockingCollection<Mapper>();
 
         public static void Reset() => converters = new BlockingCollection<Mapper>();
+
+        private static void ReplaceMapper(Type from, Type to, Mapper mapper)
+        {
+            converters.Remove(FindMapper(from,to));
+            converters.Add(mapper);
+        }
 
         public static Mapper FindMapper(Type from, Type to)
             => converters.FirstOrDefault(d => d.Matches(from, to));
@@ -38,9 +65,8 @@ namespace TinyMapper
                     toType = toType.GetGenericArguments()[0];
                     isTask = true;
                 }
-                if (!HasMapper(fromType, toType))
-                {
-                    var conv = isTask
+
+                var conv = isTask
                         ? new Func<object, Task<object>>(async (indata) => indata != null
                              ? await (dynamic)(mapperDelegate.DynamicInvoke(indata))
                              : null)
@@ -48,15 +74,16 @@ namespace TinyMapper
                              ? Task.FromResult(mapperDelegate.DynamicInvoke(indata))
                              : Task.FromResult<object>(null));
 
-                    var mapper = new Mapper()
-                    {
-                        Converter = conv,
-                        From = fromType,
-                        To = toType
-                    };
+                var mapper = new Mapper()
+                {
+                    Converter = conv,
+                    From = fromType,
+                    To = toType
+                };
 
+                if (!HasMapper(fromType, toType))
+                {
                     converters.Add(mapper);
-
                 }
                 else
                 {
@@ -65,22 +92,23 @@ namespace TinyMapper
                         if (!OnMappingOverwrite(fromType, toType))
                             throw new MapperAlreadyDefinedException(fromType, toType);
                     }
+                    ReplaceMapper(fromType, toType, mapper);
                 }
             }
         }
 
         public static void AddMapping<TFrom, TTo>(Func<TFrom, Task<TTo>> converter)
         {
+            var mapper = new Mapper()
+            {
+                Converter = new Func<object, Task<object>>(async (indata) => indata is TFrom data
+                    ? await converter.Invoke(data)
+                    : (object)default(TTo)),
+                From = typeof(TFrom),
+                To = typeof(TTo)
+            };
             if (!HasMapper<TFrom, TTo>())
             {
-                var mapper = new Mapper()
-                {
-                    Converter = new Func<object, Task<object>>(async (indata) => indata is TFrom data
-                        ? await converter.Invoke(data)
-                        : (object)default(TTo)),
-                    From = typeof(TFrom),
-                    To = typeof(TTo)
-                };
                 converters.Add(mapper);
             }
             else
@@ -90,21 +118,23 @@ namespace TinyMapper
                     if (!OnMappingOverwrite(typeof(TFrom), typeof(TTo)))
                         throw new MapperAlreadyDefinedException(typeof(TFrom), typeof(TTo));
                 }
+                ReplaceMapper(typeof(TFrom), typeof(TTo), mapper);
             }
         }
 
         public static void AddMapping<TFrom, TTo>(Func<TFrom, TTo> converter)
         {
-            if (!HasMapper<TFrom, TTo>())
+            var mapper = new Mapper()
             {
-                var mapper = new Mapper()
-                {
-                    Converter = new Func<object, Task<object>>((indata) => Task.FromResult(indata is TFrom data
-                        ? converter.Invoke(data)
-                        : (object)default(TTo))),
-                    From = typeof(TFrom),
-                    To = typeof(TTo)
-                };
+                Converter = new Func<object, Task<object>>((indata) => Task.FromResult(indata is TFrom data
+                    ? converter.Invoke(data)
+                    : (object)default(TTo))),
+                From = typeof(TFrom),
+                To = typeof(TTo)
+            };
+
+            if (!HasMapper<TFrom, TTo>())
+            {    
                 converters.Add(mapper);
             }
             else
@@ -114,6 +144,7 @@ namespace TinyMapper
                     if (!OnMappingOverwrite(typeof(TFrom), typeof(TTo)))
                         throw new MapperAlreadyDefinedException(typeof(TFrom), typeof(TTo));
                 }
+                ReplaceMapper(typeof(TFrom), typeof(TTo), mapper);
             }
         }
 

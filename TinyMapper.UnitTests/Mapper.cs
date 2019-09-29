@@ -46,17 +46,21 @@
             var toObject = await fromObject.ConvertAsync<FromObject>();
 
             //Assert
-            toObject.EnumValue.Should().Be("No");        }        [Fact]        public void Allow_mapperoverwrite()        {
+            toObject.EnumValue.Should().Be("No");        }        [Fact]        public async Task Allow_mapperoverwrite()        {
             // Arrange
             MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, ToObject>(MappingHandler.MappingPropertySource.Target, requireAllProperties: true));
 
             // Act
             //Action shouldAddExisitingMapping = () =>
-            MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, ToObject>());
+            MappingHandler.AddMapping<FromObject, ToObject>(async (source) => new ToObject() {
+                 Name = "NewMapper!"
+            });
             //); ;
 
+            var result = await new FromObject().ConvertAsync<ToObject>();
+
             //Assert
-            Assert.Equal(true, true);
+            Assert.Equal("NewMapper!", result.Name);
             //shouldAddExisitingMapping.Should().Throw<MapperAlreadyDefinedException>();        }        [Fact]        public void Mapping_should_throw_if_fields_are_missing()        {
             //Arrange
             MappingHandler.AddMapping(MappingHandler.AutoConverter<FromObject, FailingToObject>(MappingHandler.MappingPropertySource.Source));            var fromObject = new FromObject()            {                Name = "Testsson",                Age = 22            };
