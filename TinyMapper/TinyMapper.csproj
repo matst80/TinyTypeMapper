@@ -6,7 +6,7 @@
     <PackageId>TinyTypeMapper</PackageId>
     <Version>1.0.2</Version>
     <PackOnBuild>true</PackOnBuild>
-    <PackageVersion>1.9.5</PackageVersion>
+    <PackageVersion>1.9.6</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>

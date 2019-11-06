@@ -51,8 +51,7 @@ namespace TinyMapper.Handler
 
             return ret;
         }
-
-        [Obsolete("You should await the async method instead", false)]
+        
         public static TTo Convert<TTo>(object data, Func<TTo, Task<TTo>> afterMapping = null) => ConvertAsync(data, afterMapping).GetAwaiter().GetResult();
 
 

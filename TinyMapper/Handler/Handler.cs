@@ -12,6 +12,7 @@ namespace TinyMapper.Handler
         Source,
         Target
     }
+
     public static partial class MappingHandler
     {
         public delegate bool MappingOverwritten(Type from, Type to);
